@@ -1,5 +1,5 @@
 import * as $ from 'jquery'
-import {MessageBuilder, messageBuilder} from './utils/message-builder'
+import {MessageBuilder} from './utils/message-builder'
 import moment from 'moment'
 
 export class ChatService {
