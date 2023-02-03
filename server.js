@@ -1,0 +1,180 @@
+const dotenv = require("dotenv").config()
+const express = require('express')
+const app = express()
+const server = require('http').createServer(app)
+const {Server} = require('socket.io')
+const io = new Server(server)
+const {google} = require('googleapis')
+const locale = require("locale")
+const path = require('path')
+const supportedLanguages = require('./data/supportedLanguages.json')
+const supportedLocales = new locale.Locales(supportedLanguages)
+const webpack = require('webpack')
+const webpackDevMiddleware = require('webpack-dev-middleware')
+
+const config = require('./webpack.config.js');
+const compiler = webpack(config);
+
+const auth = new google.auth.GoogleAuth({
+    keyFile: './data/google-key.json',
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+})
+
+google.options({
+    auth: auth
+})
+
+const translate = google.translate({
+    version: 'v2',
+    auth,
+})
+
+function isBlank(str) {
+    return (!str || /^\s*$/.test(str));
+}
+
+async function detectLanguage(text) {
+    const res = await translate.detections.detect({
+        requestBody: {
+            q: text
+        }
+    })
+
+    return res.data.data.detections[0][0].language
+}
+
+async function translateText(text, targetLanguage = 'en') {
+    let language = await detectLanguage(text)
+
+    console.log(targetLanguage)
+    targetLanguage = targetLanguage.split('-')[0]
+    language = language.split('-')[0]
+
+    if (language == targetLanguage) return {
+        translated: text,
+        original: text,
+        fromLanguage: targetLanguage,
+        targetLanguage: targetLanguage,
+    }
+
+    const translation = await translate.translations.translate({
+        requestBody: {
+            source: language,
+            target: targetLanguage,
+            q: text
+        }
+    })
+
+    return {
+        translated: translation.data.data.translations[0].translatedText,
+        original: text,
+        fromLanguage: language,
+        targetLanguage: targetLanguage,
+    }
+}
+
+app.use(webpackDevMiddleware(compiler, {
+    publicPath: config.output.publicPath,
+}))
+app.use(express.static(path.resolve('./public')))
+app.use(express.static(path.resolve('./dist')))
+
+app.get('/', function (req, res) {
+    res.sendFile(`${__dirname }/index.html`)
+})
+
+const connectedUsers = new Map();
+
+function updateUsers() {
+    io.emit('users', {users: [...connectedUsers.values()]})
+}
+
+io.on('connection', function (socket) {
+    console.log('user connected')
+
+    const languages = new locale.Locales(socket.handshake.headers['accept-language'])
+    const bestLanguage = languages.best(supportedLocales)
+
+    connectedUsers.set(socket, {
+        username: 'anonymous',
+        connectionTime: Date.now(),
+        language: bestLanguage.language,
+    })
+
+    socket.on('chat message', async (message) => {
+        const userData = connectedUsers.get(socket)
+        if (userData.username === undefined) {
+            socket.emit('error', 'You can\'t chat without a username!')
+            return
+        }
+
+        if (isBlank(message)) {
+            return
+        }
+
+        message = message.trim()
+
+        const translationCache = new Map()
+
+        for (const _connectedUser of connectedUsers) {
+            if (_connectedUser[0] === socket) continue
+            const connectedUser = _connectedUser[1]
+            const targetLanguage = connectedUser.language
+
+            let translation = undefined
+            if (translationCache.has(targetLanguage)) {
+                translation = translationCache.get(targetLanguage)
+            } else {
+                translation = await translateText(message, targetLanguage)
+                translationCache.set(targetLanguage, translation)
+            }
+
+            const messageObject = {
+                fromUser: connectedUsers.get(socket).username,
+                content: translation.translated,
+                original: message,
+                fromLanguage: translation.fromLanguage,
+            }
+
+            console.log('chat message:', messageObject)
+            _connectedUser[0].emit('chat message', messageObject)
+        }
+    })
+
+    socket.on('register', (_userData) => {
+        const userData = connectedUsers.get(socket)
+        if (_userData.username && _userData.username.length > 0) {
+            userData.username = _userData.username
+        }
+        // connectedUsers.set(socket, userData)
+
+        socket.emit('languages', {
+            supportedLanguages,
+            activeLanguage: userData.language
+        })
+
+        updateUsers()
+    })
+
+    socket.on('change language', (newLanguage) => {
+        const userData = connectedUsers.get(socket)
+        userData.language = newLanguage
+        console.log(userData)
+        console.log(connectedUsers.get(socket))
+    })
+
+    socket.on('disconnect', function () {
+        console.log('user disconnected')
+        const userData = connectedUsers.get(socket)
+        io.emit('user disconnect', {
+            username: userData.username
+        })
+
+        connectedUsers.delete(socket)
+        updateUsers()
+    })
+})
+
+server.listen(3000, function () {
+    console.log('listening on *:3000')
+})

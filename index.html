@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World Chat</title>
+
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            /*padding-bottom: 3rem;*/
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        form {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.25rem;
+            /*flex: 1;*/
+            /*position: fixed;*/
+            /*bottom: 0;*/
+            /*left: 0;*/
+            /*right: 0;*/
+            display: flex;
+            height: 3rem;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        input {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+        input:focus {
+            outline: none;
+        }
+
+        form > button {
+            background: #333;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            border-radius: 3px;
+            outline: none;
+            color: #fff;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            flex-grow:1;
+        }
+
+        #messages > li {
+            padding: 0.5rem 1rem;
+        }
+
+        #messages > li:nth-child(odd) {
+            background: #efefef;
+        }
+    </style>
+</head>
+<body>
+<h3>current users:</h3>
+<ul id="users"></ul>
+<form id="language-form" action="">
+    <select name="language-select" id="language-select">
+    </select>
+
+    <button>Change Language</button>
+</form>
+<ul id="messages"></ul>
+<form id="message-form" action="">
+    <input id="message-input" autocomplete="off"/>
+    <button>Send</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    const username = prompt("what's your nickname?");
+
+    const languageForm = document.getElementById('language-form');
+    const languageSelect = document.getElementById('language-select');
+
+    const messages = document.getElementById('messages');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+
+    messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (messageInput.value) {
+            socket.emit('chat message', messageInput.value);
+            messageInput.value = '';
+        }
+    });
+
+    languageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        socket.emit('change language', languageSelect.value);
+    })
+
+    socket.on('chat message', (message) => {
+        const item = document.createElement('li');
+        item.innerHTML = `${message.fromUser}: ${message.content}`;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    const usersEl = document.querySelector('#users');
+    socket.on('users', ({users}) => {
+        usersEl.innerHTML = '';
+
+        console.log(users)
+        users.sort((a, b) => a.connectionTime < b.connectionTime);
+
+        for (const user of users) {
+            const li = document.createElement('li');
+            li.textContent = user.username;
+            usersEl.appendChild(li);
+        }
+    });
+
+    socket.on('error', (error) => {
+        alert(error);
+    });
+
+    socket.on('connect', () => {
+        socket.emit('register', {
+            username,
+        });
+    })
+
+    socket.on('languages', ({supportedLanguages, activeLanguage}) => {
+        for (const language of supportedLanguages) {
+            console.log(language)
+            const el = document.createElement('option');
+
+            el.value = language;
+            el.textContent = language;
+
+            if (language === activeLanguage) el.selected = true
+
+            languageSelect.appendChild(el);
+        }
+    });
+</script>
+<script src="index.bundle.js"></script>
+</body>
+</html>
