@@ -104,6 +104,14 @@ export class ChatService {
             this.messages.appendChild(userDisconnectDiv)
         })
 
+        this.socket.on('user connect', ({username}) => {
+            const userConnectDiv = new MessageBuilder(document)
+                .setTypeInfo()
+                .setText(`${username} has connected...`)
+                .build()
+            this.messages.appendChild(userConnectDiv)
+        })
+
         // this.socket.on('languages', ({supportedLanguages, activeLanguage}) => {
         //     for (const language of supportedLanguages) {
         //         console.log(language)

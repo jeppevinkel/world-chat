@@ -145,6 +145,9 @@ io.on('connection', function (socket) {
         const userData = connectedUsers.get(socket)
         if (_userData.username && _userData.username.length > 0) {
             userData.username = _userData.username
+            io.emit('user connect', {
+                username: _userData.username
+            })
         }
         // connectedUsers.set(socket, userData)
 
