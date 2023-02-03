@@ -79,9 +79,9 @@ app.use(webpackDevMiddleware(compiler, {
 app.use(express.static(path.resolve('./public')))
 app.use(express.static(path.resolve('./dist')))
 
-app.get('/', function (req, res) {
-    res.sendFile(`${__dirname }/index.html`)
-})
+// app.get('/', function (req, res) {
+//     res.sendFile(`${__dirname }/index.html`)
+// })
 
 const connectedUsers = new Map();
 

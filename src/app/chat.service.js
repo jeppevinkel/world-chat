@@ -77,7 +77,6 @@ export class ChatService {
         this.socket.on('users', ({users}) => {
             this.userList.innerHTML = ''
 
-            console.log(users)
             users.sort((a, b) => a.connectionTime < b.connectionTime)
 
             for (const user of users) {
