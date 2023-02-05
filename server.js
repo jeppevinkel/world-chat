@@ -73,7 +73,7 @@ app.use(express.static(path.resolve('./dist')))
 // })
 
 const connectedUsers = new Map();
-const eventHistory = new Fifo(50)
+const eventHistory = new Fifo(50, undefined, './data/eventHistory.json')
 
 function updateUsers() {
     io.emit('users', {users: [...connectedUsers.values()]})
