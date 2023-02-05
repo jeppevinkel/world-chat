@@ -1,4 +1,4 @@
-const dotenv = require("dotenv").config()
+require("dotenv").config()
 const express = require('express')
 const app = express()
 const server = require('http').createServer(app)
@@ -44,22 +44,10 @@ async function detectLanguage(text) {
 }
 
 async function translateText(text, targetLanguage = 'en') {
-    let language = await detectLanguage(text)
-
-    console.log(targetLanguage)
     targetLanguage = targetLanguage.split('-')[0]
-    language = language.split('-')[0]
-
-    if (language == targetLanguage) return {
-        translated: text,
-        original: text,
-        fromLanguage: targetLanguage,
-        targetLanguage: targetLanguage,
-    }
 
     const translation = await translate.translations.translate({
         requestBody: {
-            source: language,
             target: targetLanguage,
             q: text
         }
@@ -68,7 +56,7 @@ async function translateText(text, targetLanguage = 'en') {
     return {
         translated: translation.data.data.translations[0].translatedText,
         original: text,
-        fromLanguage: language,
+        fromLanguage: translation.data.data.translations[0].detectedSourceLanguage,
         targetLanguage: targetLanguage,
     }
 }
@@ -149,7 +137,6 @@ io.on('connection', function (socket) {
                 username: _userData.username
             })
         }
-        // connectedUsers.set(socket, userData)
 
         socket.emit('languages', {
             supportedLanguages,
