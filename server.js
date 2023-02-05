@@ -186,8 +186,8 @@ io.on('connection', function (socket) {
     })
 
     socket.on('disconnect', function () {
-        console.log('user disconnected')
         const userData = connectedUsers.get(socket)
+        console.log('user disconnected: ' + userData.username)
         io.emit('user disconnect', {
             username: userData.username
         })
