@@ -11,6 +11,7 @@ const supportedLanguages = require('./data/supportedLanguages.json')
 const supportedLocales = new locale.Locales(supportedLanguages)
 const webpack = require('webpack')
 const webpackDevMiddleware = require('webpack-dev-middleware')
+const Fifo = require('./Fifo')
 
 const config = require('./webpack.config.js');
 const compiler = webpack(config);
@@ -72,6 +73,7 @@ app.use(express.static(path.resolve('./dist')))
 // })
 
 const connectedUsers = new Map();
+const eventHistory = new Fifo(50)
 
 function updateUsers() {
     io.emit('users', {users: [...connectedUsers.values()]})
@@ -103,6 +105,7 @@ io.on('connection', function (socket) {
         message = message.trim()
 
         const translationCache = new Map()
+        const timestamp = Date.now()
 
         for (const _connectedUser of connectedUsers) {
             if (_connectedUser[0] === socket) continue
@@ -122,19 +125,40 @@ io.on('connection', function (socket) {
                 content: translation.translated,
                 original: message,
                 fromLanguage: translation.fromLanguage,
+                timestamp,
             }
 
             console.log('chat message:', messageObject)
             _connectedUser[0].emit('chat message', messageObject)
         }
+
+        eventHistory.push({
+            type: 'chat message',
+            data: {
+                translationCache: Object.fromEntries(translationCache),
+                fromUser: connectedUsers.get(socket).username,
+                original: message,
+            },
+            timestamp
+        })
+
+        console.log(JSON.stringify(eventHistory, null, 2))
     })
 
     socket.on('register', (_userData) => {
         const userData = connectedUsers.get(socket)
         if (_userData.username && _userData.username.length > 0) {
+            const timestamp = Date.now()
             userData.username = _userData.username
             io.emit('user connect', {
                 username: _userData.username
+            })
+            eventHistory.push({
+                type: 'user connect',
+                data: {
+                    username: _userData.username,
+                },
+                timestamp,
             })
         }
 
@@ -153,11 +177,23 @@ io.on('connection', function (socket) {
         console.log(connectedUsers.get(socket))
     })
 
+    socket.on('get history', () => {
+        socket.emit('history', {
+            history: eventHistory.array
+        })
+    })
+
     socket.on('disconnect', function () {
         console.log('user disconnected')
         const userData = connectedUsers.get(socket)
         io.emit('user disconnect', {
             username: userData.username
+        })
+        eventHistory.push({
+            type: 'user disconnect',
+            data: {
+                username: userData.username,
+            },
         })
 
         connectedUsers.delete(socket)
