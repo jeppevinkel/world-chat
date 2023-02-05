@@ -141,8 +141,6 @@ io.on('connection', function (socket) {
             },
             timestamp
         })
-
-        console.log(JSON.stringify(eventHistory, null, 2))
     })
 
     socket.on('register', (_userData) => {
