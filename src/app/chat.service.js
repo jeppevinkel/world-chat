@@ -1,6 +1,7 @@
 import * as $ from 'jquery'
 import {MessageBuilder} from './utils/message-builder'
 import moment from 'moment'
+import messageIncomingAudio from '../audio/msg-incoming.mp3'
 
 export class ChatService {
     constructor(socket, options) {
@@ -9,6 +10,9 @@ export class ChatService {
         // const languageSelect = document.getElementById('language-select')
 
         this.username = options?.username?.length > 0 ? options.username : 'anon'
+
+        this.messageIncomingSound = new Audio(messageIncomingAudio)
+        this.messageIncomingSound.load()
 
         this.messages = document.getElementById('messages')
         this.messageContainer = document.getElementById('message-container')
@@ -73,6 +77,9 @@ export class ChatService {
 
             this.messages.appendChild(messageDiv)
             this.messageContainer.scrollTop = this.messageContainer.scrollHeight
+
+            if (!document.hasFocus())
+                this.messageIncomingSound.play()
         })
 
         this.socket.on('users', ({users}) => {
