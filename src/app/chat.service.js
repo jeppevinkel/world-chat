@@ -105,6 +105,7 @@ export class ChatService {
                 .setText(`${username} has disconnected`)
                 .build()
             this.messages.appendChild(userDisconnectDiv)
+            this.messageContainer.scrollTop = this.messageContainer.scrollHeight
         })
 
         this.socket.on('user connect', ({username}) => {
@@ -113,6 +114,7 @@ export class ChatService {
                 .setText(`${username} has connected...`)
                 .build()
             this.messages.appendChild(userConnectDiv)
+            this.messageContainer.scrollTop = this.messageContainer.scrollHeight
         })
 
         this.socket.on('history', ({history}) => {
