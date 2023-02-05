@@ -80,8 +80,6 @@ function updateUsers() {
 }
 
 io.on('connection', function (socket) {
-    console.log('user connected')
-
     const languages = new locale.Locales(socket.handshake.headers['accept-language'])
     const bestLanguage = languages.best(supportedLocales)
 
@@ -159,6 +157,8 @@ io.on('connection', function (socket) {
                 timestamp,
             })
         }
+
+        console.log('user connected: ' + userData.username)
 
         socket.emit('languages', {
             supportedLanguages,
