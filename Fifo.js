@@ -36,7 +36,6 @@ class Fifo {
     }
 
     async save() {
-        console.log(this)
         if (!this.backupPath || !this.loaded) return
         await fs.writeFile(this.backupPath, JSON.stringify(this.array), {encoding: 'utf-8'})
     }
