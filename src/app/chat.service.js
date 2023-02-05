@@ -117,27 +117,43 @@ export class ChatService {
         this.socket.on('history', ({history}) => {
             console.log(history)
             for (const _event of history) {
-                if (_event.type === 'chat message') {
-                    const message = _event.data
-                    let content = message.original
-                    let fromLanguage = undefined
+                switch (_event.type) {
+                    case 'chat message':
+                        const message = _event.data
+                        let content = message.original
+                        let fromLanguage = undefined
 
-                    console.log(this.language)
-                    if (message.translationCache[this.language]) {
-                        content = message.translationCache[this.language].translated
-                        fromLanguage = message.translationCache[this.language].fromLanguage
-                    }
+                        console.log(this.language)
+                        if (message.translationCache[this.language]) {
+                            content = message.translationCache[this.language].translated
+                            fromLanguage = message.translationCache[this.language].fromLanguage
+                        }
 
-                    const messageDiv = new MessageBuilder(document)
-                        .setFrom(message.fromUser)
-                        .setText(content)
-                        .setTitle(message.original)
-                        .setLanguage(fromLanguage)
-                        .setTime(`[${moment(_event.timestamp).format('DD.MM.YYYY HH:mm:ss')}]`)
-                        .build()
+                        const messageDiv = new MessageBuilder(document)
+                            .setFrom(message.fromUser)
+                            .setText(content)
+                            .setTitle(message.original)
+                            .setLanguage(fromLanguage)
+                            .setTime(`[${moment(_event.timestamp).format('DD.MM.YYYY HH:mm:ss')}]`)
+                            .build()
 
-                    this.messages.appendChild(messageDiv)
-                    this.messageContainer.scrollTop = this.messageContainer.scrollHeight
+                        this.messages.appendChild(messageDiv)
+                        this.messageContainer.scrollTop = this.messageContainer.scrollHeight
+                        break
+                    case 'user connect':
+                        const userConnectDiv = new MessageBuilder(document)
+                            .setTypeInfo()
+                            .setText(`${_event.data.username} has connected...`)
+                            .build()
+                        this.messages.appendChild(userConnectDiv)
+                        break
+                    case 'user disconnect':
+                        const userDisconnectDiv = new MessageBuilder(document)
+                            .setTypeInfo()
+                            .setText(`${_event.data.username} has disconnected`)
+                            .build()
+                        this.messages.appendChild(userDisconnectDiv)
+                        break
                 }
             }
         })
