@@ -153,13 +153,13 @@ io.on('connection', function (socket) {
             io.emit('user connect', {
                 username: _userData.username
             })
-            eventHistory.push({
-                type: 'user connect',
-                data: {
-                    username: _userData.username,
-                },
-                timestamp,
-            })
+            // eventHistory.push({
+            //     type: 'user connect',
+            //     data: {
+            //         username: _userData.username,
+            //     },
+            //     timestamp,
+            // })
         }
 
         socket.emit('languages', {
@@ -189,12 +189,12 @@ io.on('connection', function (socket) {
         io.emit('user disconnect', {
             username: userData.username
         })
-        eventHistory.push({
-            type: 'user disconnect',
-            data: {
-                username: userData.username,
-            },
-        })
+        // eventHistory.push({
+        //     type: 'user disconnect',
+        //     data: {
+        //         username: userData.username,
+        //     },
+        // })
 
         connectedUsers.delete(socket)
         updateUsers()
