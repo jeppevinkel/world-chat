@@ -102,11 +102,6 @@ io.on('connection', function (socket) {
 
         message = message.trim()
 
-        console.log('chat message', {
-            message,
-            user: userData.username
-        })
-
         const translationCache = new Map()
         const timestamp = Date.now()
 
@@ -133,6 +128,12 @@ io.on('connection', function (socket) {
 
             _connectedUser[0].emit('chat message', messageObject)
         }
+
+        console.log('chat message', {
+            message,
+            user: userData.username,
+            translations: Object.fromEntries(translationCache)
+        })
 
         eventHistory.push({
             type: 'chat message',
