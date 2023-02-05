@@ -47,7 +47,8 @@ export class ChatService {
         });
 
         this.messageForm.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && (e.keyCode === 13 || e.code === 'Enter' || e.code === 'NumpadEnter')) {
+            if (!e.shiftKey && (e.keyCode === 13 || e.code === 'Enter' || e.code === 'NumpadEnter')) {
+                e.preventDefault()
                 this.messageForm.requestSubmit()
             }
         })
